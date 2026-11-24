@@ -39,6 +39,42 @@ whose directions are unbound, movement at the same time. The setting is meant
 for a player whose directions are bound to the stick or the keyboard and who
 wants the D-Pad for something else.
 
+## Keeping the 1P keys when joining
+
+The game keeps each player's keys in two blocks, one for player 1 and one for
+player 2. When you join an online match you are player 2, so EfzRevival swaps
+the two blocks at the start: you then play with the keys you set up for 1P.
+
+EfzRevival 1.02h and later also re-open the controllers during character
+select when they see a controller they had not counted before, which is true
+the first time they look. On the joining side they swap the two blocks again
+right after that, without reading `KEY.ini` first. That undoes the swap from
+the start of the match, and the joining player is left on the 2P keys. With
+nothing bound for 2P the controller, or the keyboard, does nothing at all.
+
+The mod repairs this. On every read of a device it remembers the two blocks.
+It puts the remembered ones back only when all of this is true at the first
+read after a controller was released:
+
+- the blocks are exactly the remembered ones with their places exchanged,
+- the two blocks are not the same as each other,
+- the blocks now stand the way `KEY.ini` has them, player 1's keys in the
+  first block and player 2's in the second, for one of its four presets.
+
+The last point is what tells the mistake from a reload. A joining player's
+blocks are meant to be the other way round from the file. After the mistaken
+swap they match the file; after a reload of `KEY.ini` on the joining side they
+are the file's keys exchanged, so they do not match, even when the file was
+changed to have the two players' keys trade places. If `KEY.ini` cannot be
+read, nothing is put back.
+
+A swap with no controller released just before it, as at the start of a match
+or when players are switched in practice mode, is never looked at.
+
+The blocks are at a fixed place in the game's memory. The repair is only
+active in the game exe that has them there, and it can be turned off with
+`KeepBindingsOnJoin=0` under `[General]`.
+
 ## Why it works in online play
 
 EfzRevival takes each player's input after the game has turned the controller
@@ -58,7 +94,8 @@ thread that:
    because the `dinput.dll` in the game folder is the mod loader,
 3. creates a DirectInput keyboard device, only to get at the table of
    functions that all DirectInput devices of a program share,
-4. replaces the "get device state" entry of that table with its own function,
+4. replaces the "get device state" and "release" entries of that table with
+   its own functions,
 5. releases the keyboard device again.
 
 Keyboard and controller devices use the same table, so the replacement covers
@@ -77,6 +114,14 @@ about it and keeps them:
   the two sliders) and what range of values each one has. Ranges differ: the game leaves them
   at the DirectInput default, while EfzConfig+ sets them to -1000 to 1000. The
   rules below work in percent of the range, so both give the same result.
+
+What the mod knows about a controller is kept under the address of its
+DirectInput device. EfzRevival closes and re-opens the controllers while the
+game runs, for example when another one is plugged in or `KEY.ini` changes,
+and a new device often lands on the address an old one just left, sometimes
+the address of the other controller. So the mod also watches devices being
+released: when the last reference to one goes away, everything noted about it
+is thrown away, and the next device at that address is examined from scratch.
 
 ## The rules
 
@@ -170,3 +215,27 @@ followed.
   only functions that exist on XP.
 - The test, `test_padmap`, checks the rules against made-up controller states.
   It needs no controller.
+
+## The logging build
+
+The build also produces a second `ControllsFix.dll`, in the `log` folder of the
+build output. It behaves the same as the normal one and additionally writes
+`ControllsFix.log` into the mod's folder, starting a new file every time the
+game starts. It is meant for finding out why a controller does not work on
+someone's machine and is not the one to hand out for playing.
+
+The log holds:
+
+- the settings the mod read,
+- every controller the mod meets, with its name, its device path and its axes,
+- a controller's state whenever its buttons change, with the buttons the mod
+  added,
+- controllers being acquired, released and polled, with the module that asked,
+  each time the result changes,
+- what XInput reports,
+- the contents of `KEY.ini`, again whenever the file is written,
+- the keys the game currently holds in memory, whenever they change,
+- the game's scene, the number of controllers it has open and whether its
+  window is in front, whenever one of them changes,
+- every time the mod puts the keys back as described under "Keeping the 1P
+  keys when joining".

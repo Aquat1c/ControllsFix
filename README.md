@@ -58,6 +58,8 @@ LeftTriggerAxis=Off
 RightTriggerAxis=Off
 ; Low or High
 TriggerRest=Low
+; 1 or 0
+KeepBindingsOnJoin=1
 
 [Buttons]
 ; the button number the game sees, 1 to 16. 0 turns the input off.
@@ -89,6 +91,10 @@ Button17=0
   stick. Leave both Off for Xbox and PlayStation controllers.
 - **TriggerRest**: set it to High if such a trigger counts as pressed while
   you are not touching it.
+- **KeepBindingsOnJoin** (under `[General]`, on by default): when you join an
+  online match you play with your 1P keys. EfzRevival 1.02h and later lose
+  that during character select and leave you on the 2P keys; this keeps you on
+  1P. Set it to 0 to turn it off.
 - **D-Pad**: EfzRevival already uses the D-Pad for movement. Give the D-Pad
   directions numbers only if you want to bind them as buttons instead.
 - Close the game before changing the settings; they are read when it starts.

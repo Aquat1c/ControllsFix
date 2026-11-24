@@ -78,18 +78,36 @@ int main(void)
     check("already held button is not reported as new",
           PadMap_Apply(&config, &pad, &state) == 0 && (state.rgbButtons[12] & 0x80));
 
+    config.triggerAxis[0] = PADMAP_AXIS_SLIDER1 + 1;
+    config.triggerAxis[1] = PADMAP_AXIS_RZ + 1;
+    rest(&state);
+    state.lRz = 0;
+    check("trigger axes: released at the low end, axis taken from the stick",
+          PadMap_Apply(&config, &pad, &state) == 0);
+    state.rglSlider[0] = 60000;
+    state.lRz = 65535;
+    check("trigger axes: slider and z rotation pulled",
+          PadMap_Apply(&config, &pad, &state) == (bit(11) | bit(12)));
+    config.triggerRestHigh = true;
+    rest(&state);
+    state.rglSlider[0] = 65535;
+    state.lRz = 1000;
+    check("trigger axes: resting high", PadMap_Apply(&config, &pad, &state) == bit(12));
+
     GetTempPathW(MAX_PATH, ini);
     wcscat(ini, L"efz_padmap_test.ini");
     file = _wfopen(ini, L"w");
-    fputs("[General]\nLayout=Classic\nThreshold=30\n[Buttons]\nRightStickUp=0\nDPadLeft=9\nButton17=10\n"
+    fputs("[General]\nLayout=Classic\nThreshold=30\nLeftTriggerAxis=slider2\nTriggerRest=High\n[Buttons]\nRightStickUp=0\nDPadLeft=9\nButton17=10\n"
           "LeftTrigger=99\n", file);
     fclose(file);
     PadMap_Load(&config, ini);
     DeleteFileW(ini);
     check("ini", config.layout == PADMAP_CLASSIC && config.threshold == 30 && config.stick[PADMAP_UP] == 0
                  && config.dpad[PADMAP_LEFT] == 9 && config.extra[0] == 10 && config.leftTrigger == 11
-                 && config.stick[PADMAP_DOWN] == 14);
+                 && config.stick[PADMAP_DOWN] == 14 && config.triggerAxis[0] == PADMAP_AXIS_SLIDER2 + 1
+                 && config.triggerAxis[1] == 0 && config.triggerRestHigh);
     rest(&state);
+    state.rglSlider[1] = 65535;
     state.rgdwPOV[0] = 27000;
     state.rgbButtons[16] = 0x80;
     state.lRz = 0;

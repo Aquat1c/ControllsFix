@@ -17,6 +17,12 @@ static const char kSlot[] =
     "The button number (1 to 16) the game sees when this is pressed. 0 = off.\n"
     "Pick a number the controller does not use for a button you want to keep.";
 
+static const char kTriggerAxis[] =
+    "For controllers whose trigger is an axis of its own and not a button, such as\n"
+    "GameCube adapters and some generic pads: the axis that trigger is on.\n"
+    "It then presses the LeftTrigger or RightTrigger button. Leave Off for Xbox and\n"
+    "PlayStation controllers. An axis chosen here is no longer read as the right stick.";
+
 static const EfzConfigSetting kSettings[] = {
     { "General", "Layout", NULL,
       "How the controller's extra sticks and triggers are laid out.\n"
@@ -27,6 +33,14 @@ static const EfzConfigSetting kSettings[] = {
     { "General", "Threshold", NULL,
       "How far a stick or trigger has to move to count as pressed, in percent.",
       EFZ_SETTING_NUMBER, 10, 90, NULL, "50" },
+    { "General", "LeftTriggerAxis", NULL, kTriggerAxis,
+      EFZ_SETTING_CHOICE, 0, 0, "Off|Z|RX|RY|RZ|Slider1|Slider2", "Off" },
+    { "General", "RightTriggerAxis", NULL, kTriggerAxis,
+      EFZ_SETTING_CHOICE, 0, 0, "Off|Z|RX|RY|RZ|Slider1|Slider2", "Off" },
+    { "General", "TriggerRest", NULL,
+      "Which end a trigger axis chosen above rests at when the trigger is released.\n"
+      "Try High if the trigger counts as pressed while you are not touching it.",
+      EFZ_SETTING_CHOICE, 0, 0, "Low|High", "Low" },
     BUTTON("LeftTrigger", "11", kSlot),
     BUTTON("RightTrigger", "12", kSlot),
     BUTTON("RightStickUp", "13", kSlot),

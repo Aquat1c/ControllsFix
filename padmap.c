@@ -55,6 +55,19 @@ void PadMap_Defaults(PadMapConfig *config)
     config->stick[PADMAP_RIGHT] = 16;
 }
 
+static int ReadAxis(const wchar_t *iniPath, const wchar_t *key)
+{
+    static const wchar_t *const names[PADMAP_AXIS_COUNT] = { L"Z", L"RX", L"RY", L"RZ", L"Slider1", L"Slider2" };
+    wchar_t text[16];
+    int i;
+
+    GetPrivateProfileStringW(L"General", key, L"Off", text, 16, iniPath);
+    for (i = 0; i < PADMAP_AXIS_COUNT; ++i)
+        if (_wcsicmp(text, names[i]) == 0)
+            return i + 1;
+    return 0;
+}
+
 static int ReadButton(const wchar_t *iniPath, const wchar_t *key, int fallback)
 {
     int value = (int)GetPrivateProfileIntW(L"Buttons", key, fallback, iniPath);
@@ -74,6 +87,10 @@ void PadMap_Load(PadMapConfig *config, const wchar_t *iniPath)
     config->threshold = (int)GetPrivateProfileIntW(L"General", L"Threshold", 50, iniPath);
     if (config->threshold < 10 || config->threshold > 90)
         config->threshold = 50;
+    config->triggerAxis[0] = ReadAxis(iniPath, L"LeftTriggerAxis");
+    config->triggerAxis[1] = ReadAxis(iniPath, L"RightTriggerAxis");
+    GetPrivateProfileStringW(L"General", L"TriggerRest", L"Low", text, 16, iniPath);
+    config->triggerRestHigh = _wcsicmp(text, L"High") == 0;
 
     config->leftTrigger = ReadButton(iniPath, L"LeftTrigger", config->leftTrigger);
     config->rightTrigger = ReadButton(iniPath, L"RightTrigger", config->rightTrigger);
@@ -91,7 +108,8 @@ void PadMap_Load(PadMapConfig *config, const wchar_t *iniPath)
 
 void PadMap_Describe(LPDIRECTINPUTDEVICE2A device, PadMapDevice *out)
 {
-    static const DWORD offsets[PADMAP_AXIS_COUNT] = { DIJOFS_Z, DIJOFS_RX, DIJOFS_RY, DIJOFS_RZ };
+    static const DWORD offsets[PADMAP_AXIS_COUNT] = { DIJOFS_Z, DIJOFS_RX, DIJOFS_RY, DIJOFS_RZ,
+                                                      DIJOFS_SLIDER(0), DIJOFS_SLIDER(1) };
     DIPROPGUIDANDPATH identity;
     DIPROPRANGE range;
     int i;
@@ -124,11 +142,24 @@ void PadMap_Describe(LPDIRECTINPUTDEVICE2A device, PadMapDevice *out)
     }
 }
 
-static int Side(const PadMapDevice *device, int axis, LONG value, int threshold)
+static LONG AxisValue(const DIJOYSTATE *state, int axis)
 {
-    LONG middle, limit;
+    switch (axis) {
+    case PADMAP_AXIS_Z: return state->lZ;
+    case PADMAP_AXIS_RX: return state->lRx;
+    case PADMAP_AXIS_RY: return state->lRy;
+    case PADMAP_AXIS_RZ: return state->lRz;
+    case PADMAP_AXIS_SLIDER1: return state->rglSlider[0];
+    default: return state->rglSlider[1];
+    }
+}
 
-    if (!device->present[axis])
+static int Side(const PadMapConfig *config, const PadMapDevice *device, int axis, const DIJOYSTATE *state)
+{
+    LONG middle, limit, value = AxisValue(state, axis);
+    int threshold = config->threshold;
+
+    if (!device->present[axis] || config->triggerAxis[0] == axis + 1 || config->triggerAxis[1] == axis + 1)
         return 0;
     middle = device->low[axis] + (device->high[axis] - device->low[axis]) / 2;
     limit = (device->high[axis] - device->low[axis]) / 2 * threshold / 100;
@@ -210,7 +241,7 @@ unsigned PadMap_Apply(const PadMapConfig *config, PadMapDevice *device, DIJOYSTA
         pressed[i] = (state->rgbButtons[16 + i] & 0x80) != 0;
 
     if (xbox) {
-        int pull = Side(device, PADMAP_AXIS_Z, state->lZ, config->threshold);
+        int pull = Side(config, device, PADMAP_AXIS_Z, state);
         XState pad;
 
         if (device->xinput && ReadTriggers(device, state, pull, &pad)) {
@@ -221,20 +252,32 @@ unsigned PadMap_Apply(const PadMapConfig *config, PadMapDevice *device, DIJOYSTA
         } else if (pull) {
             Press(state, pull > 0 ? config->leftTrigger : config->rightTrigger);
         }
-        horizontal = Side(device, PADMAP_AXIS_RX, state->lRx, config->threshold);
-        vertical = Side(device, PADMAP_AXIS_RY, state->lRy, config->threshold);
+        horizontal = Side(config, device, PADMAP_AXIS_RX, state);
+        vertical = Side(config, device, PADMAP_AXIS_RY, state);
     } else if (device->present[PADMAP_AXIS_RZ]) {
-        horizontal = Side(device, PADMAP_AXIS_Z, state->lZ, config->threshold);
-        vertical = Side(device, PADMAP_AXIS_RZ, state->lRz, config->threshold);
+        horizontal = Side(config, device, PADMAP_AXIS_Z, state);
+        vertical = Side(config, device, PADMAP_AXIS_RZ, state);
     } else {
-        horizontal = Side(device, PADMAP_AXIS_RX, state->lRx, config->threshold);
-        vertical = Side(device, PADMAP_AXIS_RY, state->lRy, config->threshold);
+        horizontal = Side(config, device, PADMAP_AXIS_RX, state);
+        vertical = Side(config, device, PADMAP_AXIS_RY, state);
     }
 
     if (vertical)
         Press(state, config->stick[vertical < 0 ? PADMAP_UP : PADMAP_DOWN]);
     if (horizontal)
         Press(state, config->stick[horizontal < 0 ? PADMAP_LEFT : PADMAP_RIGHT]);
+
+    for (i = 0; i < 2; ++i) {
+        int axis = config->triggerAxis[i] - 1;
+        LONG travel;
+
+        if (axis < 0 || !device->present[axis])
+            continue;
+        travel = config->triggerRestHigh ? device->high[axis] - AxisValue(state, axis)
+                                         : AxisValue(state, axis) - device->low[axis];
+        if (travel > (device->high[axis] - device->low[axis]) / 100 * config->threshold)
+            Press(state, i == 0 ? config->leftTrigger : config->rightTrigger);
+    }
 
     if (LOWORD(hat) != 0xFFFF) {
         if (hat >= 29250 || hat < 6750)

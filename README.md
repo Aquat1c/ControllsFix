@@ -53,6 +53,11 @@ above.
 Layout=Auto
 ; how far a stick or trigger has to move, in percent (10 to 90)
 Threshold=50
+; Off, Z, RX, RY, RZ, Slider1 or Slider2
+LeftTriggerAxis=Off
+RightTriggerAxis=Off
+; Low or High
+TriggerRest=Low
 
 [Buttons]
 ; the button number the game sees, 1 to 16. 0 turns the input off.
@@ -76,6 +81,14 @@ Button17=0
   the Z axis and Z rotation, as on PlayStation controllers and most others.
   Set it by hand if your controller's right stick does nothing or the wrong
   thing.
+- **LeftTriggerAxis, RightTriggerAxis**: for controllers whose triggers are
+  neither buttons nor Xbox-type triggers, such as GameCube adapters and some
+  generic pads. Name the axis each trigger is on and it presses the
+  LeftTrigger or RightTrigger button. If you do not know the axis, try them
+  one after another. An axis used this way is no longer read as the right
+  stick. Leave both Off for Xbox and PlayStation controllers.
+- **TriggerRest**: set it to High if such a trigger counts as pressed while
+  you are not touching it.
 - **D-Pad**: EfzRevival already uses the D-Pad for movement. Give the D-Pad
   directions numbers only if you want to bind them as buttons instead.
 - Close the game before changing the settings; they are read when it starts.

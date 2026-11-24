@@ -6,7 +6,8 @@
 #include <stdbool.h>
 
 enum { PADMAP_AUTO, PADMAP_XBOX, PADMAP_CLASSIC };
-enum { PADMAP_AXIS_Z, PADMAP_AXIS_RX, PADMAP_AXIS_RY, PADMAP_AXIS_RZ, PADMAP_AXIS_COUNT };
+enum { PADMAP_AXIS_Z, PADMAP_AXIS_RX, PADMAP_AXIS_RY, PADMAP_AXIS_RZ,
+       PADMAP_AXIS_SLIDER1, PADMAP_AXIS_SLIDER2, PADMAP_AXIS_COUNT };
 enum { PADMAP_UP, PADMAP_DOWN, PADMAP_LEFT, PADMAP_RIGHT };
 
 typedef struct PadMapConfig {
@@ -16,6 +17,8 @@ typedef struct PadMapConfig {
     int stick[4];
     int dpad[4];
     int extra[16];
+    int triggerAxis[2];
+    bool triggerRestHigh;
 } PadMapConfig;
 
 typedef struct PadMapDevice {

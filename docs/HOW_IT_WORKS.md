@@ -73,8 +73,8 @@ about it and keeps them:
 
 - whether it is an Xbox-type controller. Windows marks those with `IG_` in the
   device path.
-- which of the four extra axes exist (Z, X rotation, Y rotation, Z rotation)
-  and what range of values each one has. Ranges differ: the game leaves them
+- which of the six extra axes exist (Z, X rotation, Y rotation, Z rotation and
+  the two sliders) and what range of values each one has. Ranges differ: the game leaves them
   at the DirectInput default, while EfzConfig+ sets them to -1000 to 1000. The
   rules below work in percent of the range, so both give the same result.
 
@@ -106,6 +106,16 @@ end of its travel. The default is 50.
 
 **Any layout:**
 
+- Each trigger can be given an axis of its own: Z, X rotation, Y rotation, Z
+  rotation or one of the two sliders. This is for controllers whose triggers
+  are separate axes and not buttons, such as GameCube adapters and some
+  generic pads. Such an axis rests at one end, so it is not measured from the
+  middle: the trigger counts as pressed when the axis has moved further from
+  its resting end than the threshold, as a percentage of its whole travel. The
+  resting end is the low end unless `TriggerRest=High` says otherwise. The
+  trigger presses the same button as the left or right trigger of the Xbox
+  layout. An axis chosen this way is left out of the right stick, whatever the
+  layout. Both are off by default.
 - Each D-Pad direction can be given a button. A diagonal presses both of its
   directions. This is off by default, because EfzRevival uses the D-Pad for
   movement.

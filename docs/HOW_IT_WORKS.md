@@ -58,6 +58,7 @@ read after a controller was released:
 
 - the blocks are exactly the remembered ones with their places exchanged,
 - the two blocks are not the same as each other,
+- the game is not in practice mode,
 - the blocks now stand the way `KEY.ini` has them, player 1's keys in the
   first block and player 2's in the second, for one of its four presets.
 
@@ -67,6 +68,12 @@ swap they match the file; after a reload of `KEY.ini` on the joining side they
 are the file's keys exchanged, so they do not match, even when the file was
 changed to have the two players' keys trade places. If `KEY.ini` cannot be
 read, nothing is put back.
+
+Practice mode is left out because there the blocks are exchanged on purpose,
+by EfzRevival's own switch of sides and by training mods, and put back when
+the match is left. That can fall together with the controllers being re-opened
+and would look the same as the mistake. Online matches never run in practice
+mode.
 
 A swap with no controller released just before it, as at the start of a match
 or when players are switched in practice mode, is never looked at.

@@ -462,6 +462,13 @@ static bool MatchesKeyFile(const BYTE *bindings)
     return false;
 }
 
+static bool InPractice(void)
+{
+    const BYTE *game = *(const BYTE **)0x79010C;
+
+    return game && !IsBadReadPtr(game + 0x1364, 1) && game[0x1364] == 1;
+}
+
 static void KeepBindings(void)
 {
     if (!g_bindings)
@@ -469,7 +476,8 @@ static void KeepBindings(void)
     EnterCriticalSection(&g_lock);
     if (g_reopened && memcmp(g_bindings, g_bindingsBefore + 16, 16) == 0
             && memcmp(g_bindings + 16, g_bindingsBefore, 16) == 0
-            && memcmp(g_bindingsBefore, g_bindingsBefore + 16, 16) != 0 && MatchesKeyFile(g_bindings)) {
+            && memcmp(g_bindingsBefore, g_bindingsBefore + 16, 16) != 0 && !InPractice()
+            && MatchesKeyFile(g_bindings)) {
         memcpy(g_bindings, g_bindingsBefore, 32);
         Log("bindings were swapped while the controllers were re-opened, swapped back");
     }
